@@ -3,5 +3,7 @@ defmodule AshLivebook.Registry do
     extensions: [Ash.Registry.ResourceValidations]
 
   entries do
+    entry AshLivebook.Tweet
+    entry AshLivebook.User
   end
 end
