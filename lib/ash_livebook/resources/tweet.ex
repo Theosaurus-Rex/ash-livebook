@@ -1,6 +1,18 @@
 defmodule AshLivebook.Tweet do
-  use Ash.Resource
+  use Ash.Resource, data_layer: AshPostgres.DataLayer
 
+  postgres do
+    repo AshLivebook.Repo
+    table "tweets"
+  end
+
+  actions do
+    create :create
+    read :read
+    update :update
+    destroy :destroy
+  end
+  
   attributes do
     uuid_primary_key :id
 
