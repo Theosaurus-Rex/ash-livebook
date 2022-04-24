@@ -12,7 +12,7 @@ defmodule AshLivebook.Tweet do
     update :update
     destroy :destroy
   end
-  
+
   attributes do
     uuid_primary_key :id
 

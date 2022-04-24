@@ -6,4 +6,6 @@ config :ashlivebook, AshLivebook.Repo,
   password: "postgres",
   hostname: "localhost"
 
+config :ashlivebook, ecto_repos: [AshLivebook.Repo]
+
 config :ashlivebook, ash_apis: [AshLivebook.Api]
