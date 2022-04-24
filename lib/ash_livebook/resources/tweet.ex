@@ -27,4 +27,10 @@ defmodule AshLivebook.Tweet do
 
     update_timestamp :updated_at
   end
+
+  relationships do
+    belongs_to :user, AshLivebook.User
+  end
 end
+
+

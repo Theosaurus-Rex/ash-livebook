@@ -49,13 +49,36 @@
       "references": null,
       "size": null,
       "type": "utc_datetime_usec"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "name": "user_id",
+      "primary_key?": false,
+      "references": {
+        "destination_field": "id",
+        "destination_field_default": null,
+        "destination_field_generated": null,
+        "multitenancy": {
+          "attribute": null,
+          "global": null,
+          "strategy": null
+        },
+        "name": "tweets_user_id_fkey",
+        "on_delete": null,
+        "on_update": null,
+        "table": "users"
+      },
+      "size": null,
+      "type": "uuid"
     }
   ],
   "base_filter": null,
   "check_constraints": [],
   "custom_indexes": [],
   "has_create_action": true,
-  "hash": "6464D9A4927E876A263FB1730051742EDE0AECF869A27B469783EF1DD119C083",
+  "hash": "45C2CC9884700811EDE062AF959F54578DC0420ED869C388287DD8656AA4FC01",
   "identities": [],
   "multitenancy": {
     "attribute": null,

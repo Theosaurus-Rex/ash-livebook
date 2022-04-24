@@ -3,3 +3,4 @@ defmodule AshLivebook.Repo do
     otp_app: :ashlivebook,
     adapter: Ecto.Adapters.Postgres
 end
+

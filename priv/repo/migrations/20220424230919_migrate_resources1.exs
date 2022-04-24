@@ -19,10 +19,13 @@ defmodule AshLivebook.Repo.Migrations.MigrateResources1 do
       add :public, :boolean, null: false, default: false
       add :inserted_at, :utc_datetime_usec, null: false, default: fragment("now()")
       add :updated_at, :utc_datetime_usec, null: false, default: fragment("now()")
+      add :user_id, references(:users, column: :id, name: "tweets_user_id_fkey", type: :uuid)
     end
   end
 
   def down do
+    drop constraint(:tweets, "tweets_user_id_fkey")
+
     drop table(:tweets)
 
     drop table(:users)

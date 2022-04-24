@@ -22,4 +22,8 @@ defmodule AshLivebook.User do
 
     uuid_primary_key :id
   end
+
+  relationships do
+    has_many :tweets, AshLivebook.Tweet, destination_field: :user_id
+  end
 end
