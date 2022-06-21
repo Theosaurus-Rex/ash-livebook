@@ -1,6 +1,16 @@
 # Overview
 
-## Create a new User
+## Livebook Setup & Sample Databse
+
+### Overview:
+
+This Livebook works off a sample database containing `Users` and `Tweets` tables, known as "resources" in Ash parlance.  Users have `email` and `id` fields, while Tweets have fields `id, body, public, inserted_at, and user_id`.  There is a one-to-many relationship between `users` and `tweets` via the `tweets.user_id` foreign key field.
+
+You can introspect this information out of the schema via `Ash.Api.resources`
+
+### Startup Database, add new User
+
+We start the ecto repo via start_link() and then create a new user.
 
 ```elixir
 AshLivebook.Repo.start_link()
@@ -8,9 +18,16 @@ AshLivebook.Repo.start_link()
 {:ok, user} =
   Ash.Changeset.new(AshLivebook.User, %{email: "ash.man@enguento.com"})
   |> AshLivebook.Api.create()
+
+IO.inspect(user.email, label: "User created:")
+
+# introspect the resources
+Ash.Api.resources(AshLivebook.Api)
 ```
 
-## Create a Tweet attached to a User
+### Add new Tweet, link to user
+
+Here we use the `replace_relationship` method to update foriegn key value of `tweet` to it's parent `user`
 
 ```elixir
 AshLivebook.Tweet
@@ -18,3 +35,125 @@ AshLivebook.Tweet
 |> Ash.Changeset.replace_relationship(:user, user)
 |> AshLivebook.Api.create()
 ```
+
+## Changesets
+
+`Changesets.new` is used when you want a "light touch" on validations as when working with internal data that you know is already sound.   Use "Changeset.<for_action>" (e.g. `Changeset.for_create/2`, `Changeset.for_destroy/3`, `Changeset.for_update/4`) when working with data entered by user or flowing-in from external system, since the validations applied there will align with the type of "for_action" being applied.
+
+A changeset created with new will not be persisted to database while one created with "for_create" will.
+
+```elixir
+# internal data, will be valid
+foo = Ash.Changeset.new(AshLivebook.User)
+IO.inspect(foo.valid?, label: "Is Changeset.new valid?")
+
+# user data, validation more rigorous for_create than just "new"
+bar = Ash.Changeset.for_create(AshLivebook.User, :create, %{})
+IO.inspect(bar.valid?, label: "Is Changeset.for_create valid?: ")
+bar2 = Ash.Changeset.for_create(AshLivebook.User, :create, %{email: "super@de-duper.com"})
+IO.inspect(bar2.valid?, label: "Is Changeset.for_create valid now?: ")
+
+# create a bunch more users
+new_user_list = [
+  "alice@wonderland.com",
+  "jo@volcano.com",
+  "sam@wainwright.com",
+  "mary@littlelamb.com"
+]
+
+users_added =
+  Enum.reduce(new_user_list, 0, fn item, acc ->
+    AshLivebook.User
+    |> Ash.Changeset.new(%{email: item})
+    |> AshLivebook.Api.create()
+
+    acc + 1
+  end)
+
+IO.inspect(users_added, label: "Users added: ")
+```
+
+### Reading Data
+
+The api layer handles interactions with the database, so just like `AshLivebook.Api.create()` is used to *save* data to the database, `AshLivebookApi.read()` is used to *retrieve* it instead.
+
+`Api.read()` takes a "query" parameter to specify the results you want to retrieve.  This can be as simple as a resource identifier *(to "select all")* or a filter, aggregate or other condition to shape the data returned.  See `Ash.Query` namespace for list of functions available.
+
+```elixir
+# select all users
+AshLivebook.Api.read!(AshLivebook.User)
+```
+
+### Querying Data
+
+To filter or shape the result set returned from `Api.read()`, first create a query.  Queries can filter, group, sort and limit result set returned from a read and usually start with a `filter`.
+
+##### Filtering
+
+`Ash.Query.Filter()` takes a query and a "filter statement" and returns a new query with that filter statement appended. Filters can be constructed either via "expression syntax" or "keyword syntax".  Expression syntax is a bit easier to type (see examples, below).
+
+`TODO: there some terms in docs about filters "statements" versus "templates" that use "actors" that I don't understand yet`.
+
+```elixir
+# TODO: This works in iex but not in livebook.
+# I think it's because we can't "require Ash.Query" here
+# if you type "require Ash.Query in iex and then run below, it works.
+require Ash.Query
+### Query Data via keyword syntax
+keyword_syntax_query = Ash.Query.filter(AshLivebook.User, email: "mary@littlelamb.com")
+expression_syntax_query = Ash.Query.filter(AshLivebook.User, email == "mary@littlelamb.com")
+
+## get the filtered data
+AshLivebook.Api.read!(keyword_syntax_query)
+AshLivebook.Api.read!(expression_syntax_query)
+
+## whole thing, pipelined all together
+AshLivebook.User
+|> Ash.Query.filter(email: "mary@littlelamb.com")
+|> AshLivebook.Api.read!()
+
+## pipelined together, expression syntax.
+AshLivebook.User
+|> Ash.Query.filter(email == "mary@littlelamb.com")
+|> AshLivebook.Api.read!()
+```
+
+##### Sorting
+
+Can also do sorting, limiting and pagination.
+
+`TODO: figure out how to do pagination.`
+
+```elixir
+## sort by email, list syntax
+AshLivebook.User
+|> Ash.Query.sort([:email])
+|> AshLivebook.Api.read!()
+
+## sort by email, keyword list syntax
+AshLivebook.User
+|> Ash.Query.sort(email: :desc)
+|> AshLivebook.Api.read!()
+
+## TODO: How do to pagination?
+```
+
+#### Preloading relationships, calculations, aggregates
+
+`Ash.Query.load()` is used to retrieve data from `Api.read()` with control over preloading of relationships, aggregates.  Example below shows preloading `tweets` and calculating total_count of users in a single connected pipeline.
+
+`TODO: not sure how to preload aggregates, whether that is in definition of resource or calculated via Ash.Query.aggregate() at run time`
+
+```elixir
+AshLivebook.User
+|> Ash.Query.load([:tweets])
+|> AshLivebook.Api.read!()
+
+## TODO: how to calculate aggregate at same time?
+```
+
+## Relationships
+
+`Ash.Changeset` contains functions to help manipulate nested changesets. You can `manage_relationship`, `replace_relationship`, `change_relationship`, `append_to_relationship`
+
+TODO: come up with good examples for this.
